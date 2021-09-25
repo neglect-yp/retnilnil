@@ -35,3 +35,11 @@ func f6() (IF, error) {
 func f7() (IF, error) {
 	return nil, nil // want "return nil, nil"
 }
+
+func f8() ([]T, error) {
+	return nil, nil
+}
+
+func f9() (map[string]T, error) {
+	return nil, nil
+}
