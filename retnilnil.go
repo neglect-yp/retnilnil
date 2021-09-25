@@ -38,9 +38,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
-		for _, stmt := range decl.Body.List {
-			walk(pass, stmt)
-		}
+		walk(pass, decl.Body)
 	})
 
 	return nil, nil
