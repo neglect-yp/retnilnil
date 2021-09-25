@@ -39,21 +39,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 		}
 
 		for _, stmt := range decl.Body.List {
-			if stmt, ok := stmt.(*ast.ReturnStmt); ok {
-				v1, ok := stmt.Results[0].(*ast.Ident)
-				if !ok {
-					continue
-				}
-
-				v2, ok := stmt.Results[1].(*ast.Ident)
-				if !ok {
-					continue
-				}
-
-				if v1.Name == "nil" && v2.Name == "nil" {
-					pass.Reportf(stmt.Pos(), "return nil, nil")
-				}
-			}
+			walk(pass, stmt)
 		}
 	})
 
@@ -78,4 +64,46 @@ func isSignatureMatched(pass *analysis.Pass, decl *ast.FuncDecl) (ok bool) {
 	}
 
 	return true
+}
+
+func walk(pass *analysis.Pass, stmt ast.Stmt) {
+	switch stmt := stmt.(type) {
+	case *ast.ReturnStmt:
+		reportIfDetected(pass, stmt)
+	case *ast.IfStmt:
+		walk(pass, stmt.Body)
+		walk(pass, stmt.Else)
+	case *ast.ForStmt:
+		walk(pass, stmt.Body)
+	case *ast.RangeStmt:
+		walk(pass, stmt.Body)
+	case *ast.SwitchStmt:
+		walk(pass, stmt.Body)
+	case *ast.TypeSwitchStmt:
+		walk(pass, stmt.Body)
+	case *ast.CaseClause:
+		for _, stmt := range stmt.Body {
+			walk(pass, stmt)
+		}
+	case *ast.BlockStmt:
+		for _, stmt := range stmt.List {
+			walk(pass, stmt)
+		}
+	}
+}
+
+func reportIfDetected(pass *analysis.Pass, stmt *ast.ReturnStmt) {
+	v1, ok := stmt.Results[0].(*ast.Ident)
+	if !ok {
+		return
+	}
+
+	v2, ok := stmt.Results[1].(*ast.Ident)
+	if !ok {
+		return
+	}
+
+	if v1.Name == "nil" && v2.Name == "nil" {
+		pass.Reportf(stmt.Pos(), "return nil, nil")
+	}
 }

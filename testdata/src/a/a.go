@@ -43,3 +43,73 @@ func f8() ([]T, error) {
 func f9() (map[string]T, error) {
 	return nil, nil
 }
+
+func fIf() (*T, error) {
+	if true {
+		return nil, nil // want "return nil, nil"
+	}
+
+	return &T{}, nil
+}
+
+func fElse() (*T, error) {
+	if true {
+		return &T{}, nil
+	} else {
+		return nil, nil // want "return nil, nil"
+	}
+
+	return &T{}, nil
+}
+
+func fFor() (*T, error) {
+	for {
+		return nil, nil // want "return nil, nil"
+	}
+
+	return &T{}, nil
+}
+
+func fRange() (*T, error) {
+	for range []string{""} {
+		return nil, nil // want "return nil, nil"
+	}
+
+	return &T{}, nil
+}
+
+func fSwitch() (*T, error) {
+	switch true {
+	case true:
+		return nil, nil // want "return nil, nil"
+	}
+
+	return &T{}, nil
+}
+
+func fDefault() (*T, error) {
+	switch true {
+	default:
+		return nil, nil // want "return nil, nil"
+	}
+
+	return &T{}, nil
+}
+
+func fTypeSwitch() (*T, error) {
+	var v interface{} = 1
+	switch v.(type) {
+	case int:
+		return nil, nil // want "return nil, nil"
+	}
+
+	return &T{}, nil
+}
+
+func fBlock() (*T, error) {
+	{
+		return nil, nil // want "return nil, nil"
+	}
+
+	return &T{}, nil
+}
