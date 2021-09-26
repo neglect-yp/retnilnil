@@ -3,6 +3,7 @@ package retnilnil
 import (
 	"go/ast"
 	"go/types"
+	"strings"
 
 	"github.com/gostaticanalysis/comment"
 	"github.com/gostaticanalysis/comment/passes/commentmap"
@@ -55,6 +56,10 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			return
 		}
 
+		if hasCommentAboutNilNil(ctx, decl) {
+			return
+		}
+
 		walk(ctx, decl.Body)
 	})
 
@@ -79,6 +84,16 @@ func isSignatureMatched(ctx *context, decl *ast.FuncDecl) (ok bool) {
 	}
 
 	return true
+}
+
+func hasCommentAboutNilNil(ctx *context, decl *ast.FuncDecl) (ok bool) {
+	for _, comment := range ctx.commentMaps.Comments(decl) {
+		if strings.Contains(comment.Text(), "nil, nil") {
+			return true
+		}
+	}
+
+	return false
 }
 
 func walk(ctx *context, stmt ast.Stmt) {

@@ -18,3 +18,12 @@ func f() (*T, error) {
 	return nil, nil // retnilnil doesn't detect this
 }
 ```
+
+Retnilnil also ignores a function that has a comment includes `nil, nil`.
+
+```go
+// f always returns `nil, nil`
+func f() (*T, error) {
+    return nil, nil // retnilnil doesn't detect this
+}
+```

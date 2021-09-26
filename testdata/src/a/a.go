@@ -123,3 +123,8 @@ func fIgnoreWithoutReason() (*T, error) {
 	//lint:ignore retnilnil
 	return nil, nil // want "return nil, nil"
 }
+
+// fDocumented always returns `nil, nil`
+func fDocumented() (*T, error) {
+	return nil, nil
+}
