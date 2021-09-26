@@ -113,3 +113,13 @@ func fBlock() (*T, error) {
 
 	return &T{}, nil
 }
+
+func fIgnore() (*T, error) {
+	//lint:ignore retnilnil reason
+	return nil, nil
+}
+
+func fIgnoreWithoutReason() (*T, error) {
+	//lint:ignore retnilnil
+	return nil, nil // want "return nil, nil"
+}

@@ -4,59 +4,76 @@ import (
 	"go/ast"
 	"go/types"
 
+	"github.com/gostaticanalysis/comment"
+	"github.com/gostaticanalysis/comment/passes/commentmap"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-const doc = "Retnilnil is a static analysis tool to detect `return nil, nil`"
+const (
+	name = "retnilnil"
+	doc  = "Retnilnil is a static analysis tool to detect `return nil, nil`"
+)
 
 var errorType = types.Universe.Lookup("error").Type()
 
 var Analyzer = &analysis.Analyzer{
-	Name: "retnilnil",
+	Name: name,
 	Doc:  doc,
 	Run:  run,
 	Requires: []*analysis.Analyzer{
 		inspect.Analyzer,
+		commentmap.Analyzer,
 	},
+}
+
+type context struct {
+	pass        *analysis.Pass
+	commentMaps *comment.Maps
 }
 
 func run(pass *analysis.Pass) (interface{}, error) {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
+	commentMaps := pass.ResultOf[commentmap.Analyzer].(comment.Maps)
 	nodes := []ast.Node{
 		(*ast.FuncDecl)(nil),
 	}
 
 	inspect.Preorder(nodes, func(n ast.Node) {
+		ctx := &context{
+			pass:        pass,
+			commentMaps: &commentMaps,
+		}
+
 		decl, ok := n.(*ast.FuncDecl)
 		if !ok {
 			return
 		}
 
-		if !isSignatureMatched(pass, decl) {
+		if !isSignatureMatched(ctx, decl) {
 			return
 		}
 
-		walk(pass, decl.Body)
+		walk(ctx, decl.Body)
 	})
 
 	return nil, nil
 }
 
-func isSignatureMatched(pass *analysis.Pass, decl *ast.FuncDecl) (ok bool) {
+func isSignatureMatched(ctx *context, decl *ast.FuncDecl) (ok bool) {
 	results := decl.Type.Results
 
 	if results.NumFields() != 2 {
 		return false
 	}
 
-	t1 := pass.TypesInfo.TypeOf(results.List[0].Type)
+	t1 := ctx.pass.TypesInfo.TypeOf(results.List[0].Type)
 	if _, ok := t1.(*types.Pointer); !ok && !types.IsInterface(t1) {
 		return false
 	}
 
-	t2 := pass.TypesInfo.TypeOf(results.List[1].Type)
+	t2 := ctx.pass.TypesInfo.TypeOf(results.List[1].Type)
 	if t2 != errorType {
 		return false
 	}
@@ -64,33 +81,37 @@ func isSignatureMatched(pass *analysis.Pass, decl *ast.FuncDecl) (ok bool) {
 	return true
 }
 
-func walk(pass *analysis.Pass, stmt ast.Stmt) {
+func walk(ctx *context, stmt ast.Stmt) {
 	switch stmt := stmt.(type) {
 	case *ast.ReturnStmt:
-		reportIfDetected(pass, stmt)
+		reportIfDetected(ctx, stmt)
 	case *ast.IfStmt:
-		walk(pass, stmt.Body)
-		walk(pass, stmt.Else)
+		walk(ctx, stmt.Body)
+		walk(ctx, stmt.Else)
 	case *ast.ForStmt:
-		walk(pass, stmt.Body)
+		walk(ctx, stmt.Body)
 	case *ast.RangeStmt:
-		walk(pass, stmt.Body)
+		walk(ctx, stmt.Body)
 	case *ast.SwitchStmt:
-		walk(pass, stmt.Body)
+		walk(ctx, stmt.Body)
 	case *ast.TypeSwitchStmt:
-		walk(pass, stmt.Body)
+		walk(ctx, stmt.Body)
 	case *ast.CaseClause:
 		for _, stmt := range stmt.Body {
-			walk(pass, stmt)
+			walk(ctx, stmt)
 		}
 	case *ast.BlockStmt:
 		for _, stmt := range stmt.List {
-			walk(pass, stmt)
+			walk(ctx, stmt)
 		}
 	}
 }
 
-func reportIfDetected(pass *analysis.Pass, stmt *ast.ReturnStmt) {
+func reportIfDetected(ctx *context, stmt *ast.ReturnStmt) {
+	if ctx.commentMaps.Ignore(stmt, name) {
+		return
+	}
+
 	v1, ok := stmt.Results[0].(*ast.Ident)
 	if !ok {
 		return
@@ -102,6 +123,6 @@ func reportIfDetected(pass *analysis.Pass, stmt *ast.ReturnStmt) {
 	}
 
 	if v1.Name == "nil" && v2.Name == "nil" {
-		pass.Reportf(stmt.Pos(), "return nil, nil")
+		ctx.pass.Reportf(stmt.Pos(), "return nil, nil")
 	}
 }
