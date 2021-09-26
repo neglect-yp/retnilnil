@@ -138,6 +138,6 @@ func reportIfDetected(ctx *context, stmt *ast.ReturnStmt) {
 	}
 
 	if v1.Name == "nil" && v2.Name == "nil" {
-		ctx.pass.Reportf(stmt.Pos(), "return nil, nil")
+		ctx.pass.Reportf(stmt.Pos(), "`return nil, nil` should be avoided. Please consider to use a reference of a zero value or an appropriate error like ErrNotFound")
 	}
 }
