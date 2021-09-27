@@ -1,7 +1,6 @@
 package retnilnil
 
 import (
-	"fmt"
 	"go/ast"
 	"go/types"
 	"strings"
@@ -127,28 +126,14 @@ func reportIfDetected(ctx *context, stmt *ast.ReturnStmt) {
 		return
 	}
 
-	if len(stmt.Results) == 2 {
-		v1, ok := stmt.Results[0].(*ast.Ident)
+	for idx := range stmt.Results {
+		v, ok := stmt.Results[idx].(*ast.Ident)
 		if !ok {
 			return
 		}
-
-		v2, ok := stmt.Results[1].(*ast.Ident)
-		if !ok {
+		if v.Name != "nil" {
 			return
 		}
-
-		if v1.Name == "nil" && v2.Name == "nil" {
-			ctx.pass.Reportf(stmt.Pos(), "`return nil, nil` should be avoided. Please consider to use a reference of a zero value or an appropriate error like ErrNotFound")
-		}
-	} else {
-		for _, result := range stmt.Results {
-			fmt.Printf("called here!\n")
-			v := result.(*ast.Ident)
-			if v.Name != "nil" {
-				return
-			}
-		}
-		ctx.pass.Reportf(stmt.Pos(), "`return nil, nil` should be avoided. Please consider to use a reference of a zero value or an appropriate error like ErrNotFound")
 	}
+	ctx.pass.Reportf(stmt.Pos(), "`return nil, nil` should be avoided. Please consider to use a reference of a zero value or an appropriate error like ErrNotFound")
 }
