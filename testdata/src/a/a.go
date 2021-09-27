@@ -44,6 +44,14 @@ func f9() (map[string]T, error) {
 	return nil, nil
 }
 
+func f10() error {
+	return nil
+}
+
+func f11() (*T, *T, error) {
+	return nil, nil, nil // want "return nil, nil"
+}
+
 func fIf() (*T, error) {
 	if true {
 		return nil, nil // want "return nil, nil"

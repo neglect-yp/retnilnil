@@ -1,6 +1,7 @@
 package retnilnil
 
 import (
+	"fmt"
 	"go/ast"
 	"go/types"
 	"strings"
@@ -69,20 +70,19 @@ func run(pass *analysis.Pass) (interface{}, error) {
 func isSignatureMatched(ctx *context, decl *ast.FuncDecl) (ok bool) {
 	results := decl.Type.Results
 
-	if results.NumFields() != 2 {
+	if results.NumFields() < 2 {
 		return false
 	}
 
-	t1 := ctx.pass.TypesInfo.TypeOf(results.List[0].Type)
-	if _, ok := t1.(*types.Pointer); !ok && !types.IsInterface(t1) {
-		return false
+	for idx, result := range results.List {
+		if idx == len(results.List)-1 {
+			return ctx.pass.TypesInfo.TypeOf(result.Type) == errorType
+		}
+		t := ctx.pass.TypesInfo.TypeOf(result.Type)
+		if _, ok := t.(*types.Pointer); !ok && !types.IsInterface(t) {
+			return false
+		}
 	}
-
-	t2 := ctx.pass.TypesInfo.TypeOf(results.List[1].Type)
-	if t2 != errorType {
-		return false
-	}
-
 	return true
 }
 
@@ -127,17 +127,28 @@ func reportIfDetected(ctx *context, stmt *ast.ReturnStmt) {
 		return
 	}
 
-	v1, ok := stmt.Results[0].(*ast.Ident)
-	if !ok {
-		return
-	}
+	if len(stmt.Results) == 2 {
+		v1, ok := stmt.Results[0].(*ast.Ident)
+		if !ok {
+			return
+		}
 
-	v2, ok := stmt.Results[1].(*ast.Ident)
-	if !ok {
-		return
-	}
+		v2, ok := stmt.Results[1].(*ast.Ident)
+		if !ok {
+			return
+		}
 
-	if v1.Name == "nil" && v2.Name == "nil" {
+		if v1.Name == "nil" && v2.Name == "nil" {
+			ctx.pass.Reportf(stmt.Pos(), "`return nil, nil` should be avoided. Please consider to use a reference of a zero value or an appropriate error like ErrNotFound")
+		}
+	} else {
+		for _, result := range stmt.Results {
+			fmt.Printf("called here!\n")
+			v := result.(*ast.Ident)
+			if v.Name != "nil" {
+				return
+			}
+		}
 		ctx.pass.Reportf(stmt.Pos(), "`return nil, nil` should be avoided. Please consider to use a reference of a zero value or an appropriate error like ErrNotFound")
 	}
 }
