@@ -1,5 +1,6 @@
 # retnilnil
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/neglect-yp/retnilnil.svg)](https://pkg.go.dev/github.com/neglect-yp/retnilnil)
 [![Test](https://github.com/neglect-yp/retnilnil/actions/workflows/test.yml/badge.svg)](https://github.com/neglect-yp/retnilnil/actions/workflows/test.yml)
 
 Retnilnil is a static analysis tool for Golang that detects `return nil, nil` in functions with `(*T, error)` as the return type.
