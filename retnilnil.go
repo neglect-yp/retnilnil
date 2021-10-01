@@ -127,6 +127,10 @@ func reportIfDetected(ctx *context, stmt *ast.ReturnStmt) {
 		return
 	}
 
+	if len(stmt.Results) != 2 {
+		return
+	}
+
 	v1, ok := stmt.Results[0].(*ast.Ident)
 	if !ok {
 		return
