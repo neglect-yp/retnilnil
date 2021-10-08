@@ -39,6 +39,7 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	commentMaps := pass.ResultOf[commentmap.Analyzer].(comment.Maps)
 	nodes := []ast.Node{
 		(*ast.FuncDecl)(nil),
+		(*ast.FuncLit)(nil),
 	}
 
 	inspect.Preorder(nodes, func(n ast.Node) {
@@ -47,28 +48,29 @@ func run(pass *analysis.Pass) (interface{}, error) {
 			commentMaps: &commentMaps,
 		}
 
-		decl, ok := n.(*ast.FuncDecl)
+		body, ok := getBodyIfTarget(ctx, n)
 		if !ok {
 			return
 		}
 
-		if !isSignatureMatched(ctx, decl) {
-			return
-		}
-
-		if hasCommentAboutNilNil(ctx, decl) {
-			return
-		}
-
-		walk(ctx, decl.Body)
+		walk(ctx, body)
 	})
 
 	return nil, nil
 }
 
-func isSignatureMatched(ctx *context, decl *ast.FuncDecl) (ok bool) {
-	results := decl.Type.Results
+func getBodyIfTarget(ctx *context, n ast.Node) (*ast.BlockStmt, bool) {
+	switch n := n.(type) {
+	case *ast.FuncDecl:
+		return n.Body, isResultsTypeMatched(ctx, n.Type.Results) && !hasCommentAboutNilNil(ctx, n)
+	case *ast.FuncLit:
+		return n.Body, isResultsTypeMatched(ctx, n.Type.Results)
+	}
 
+	return nil, false
+}
+
+func isResultsTypeMatched(ctx *context, results *ast.FieldList) (ok bool) {
 	if results.NumFields() != 2 {
 		return false
 	}

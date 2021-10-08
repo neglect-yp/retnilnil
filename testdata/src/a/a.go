@@ -132,3 +132,20 @@ func fIgnoreWithoutReason() (*T, error) {
 func fDocumented() (*T, error) {
 	return nil, nil
 }
+
+func fFuncLit() {
+	f := func() (*T, error) {
+		return nil, nil // want "return nil, nil"
+	}
+	f()
+}
+
+func fFuncLit2() {
+	func() (*T, error) {
+		return nil, nil // want "return nil, nil"
+	}()
+}
+
+var fFuncLit3 = func() (*T, error) {
+	return nil, nil // want "return nil, nil"
+}
