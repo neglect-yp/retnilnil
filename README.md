@@ -34,7 +34,7 @@ func f() (*T, error) {
 You can get `retnilnil` by go install command (Go 1.16 and higher).
 
 ```
-$ go install github.com/neglect-yp/retnilnil/cmd/retnilnil@v0.1.0
+$ go install github.com/neglect-yp/retnilnil/cmd/retnilnil@v0.2.0
 ```
 
 ## How to use
