@@ -38,11 +38,20 @@ func run(pass *analysis.Pass) (interface{}, error) {
 	inspect := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	commentMaps := pass.ResultOf[commentmap.Analyzer].(comment.Maps)
 	nodes := []ast.Node{
+		(*ast.File)(nil),
 		(*ast.FuncDecl)(nil),
 		(*ast.FuncLit)(nil),
 	}
 
-	inspect.Preorder(nodes, func(n ast.Node) {
+	inspect.Nodes(nodes, func(n ast.Node, push bool) bool {
+		if !push {
+			return false
+		}
+
+		if file, ok := n.(*ast.File); ok && strings.HasSuffix(pass.Fset.File(file.Pos()).Name(), "_test.go") {
+			return false
+		}
+
 		ctx := &context{
 			pass:        pass,
 			commentMaps: &commentMaps,
@@ -50,10 +59,12 @@ func run(pass *analysis.Pass) (interface{}, error) {
 
 		body, ok := getBodyIfTarget(ctx, n)
 		if !ok {
-			return
+			return true
 		}
 
 		walk(ctx, body)
+
+		return true
 	})
 
 	return nil, nil
